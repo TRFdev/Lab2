@@ -1,0 +1,100 @@
+-- =========================================================================
+-- ЧАСТЬ 1: Создание таблиц (Структура из первой практической работы)
+-- =========================================================================
+
+DROP TABLE IF EXISTS Schedule CASCADE;
+DROP TABLE IF EXISTS laboratories CASCADE;
+DROP TABLE IF EXISTS Step3_Schedule CASCADE;
+
+CREATE TABLE laboratories (
+    lab_number INT PRIMARY KEY,
+    Lab_name VARCHAR(100) NOT NULL,
+    activity_type TEXT,
+    head_of_lab VARCHAR(100),
+    workplaces_count INT,
+    has_project_equipment BOOLEAN,
+    department_number INT
+);
+
+CREATE TABLE Schedule (
+    group_number VARCHAR(20) NOT NULL,
+    lab_number INT,
+    discipline VARCHAR(100) NOT NULL,
+    day_of_week VARCHAR(15) NOT NULL,
+    lesson_number INT NOT NULL,
+    CONSTRAINT pk_schedule PRIMARY KEY (group_number, day_of_week, lesson_number),
+    CONSTRAINT fk_laboratory FOREIGN KEY (lab_number) REFERENCES laboratories (lab_number) ON DELETE CASCADE
+);
+
+
+-- =========================================================================
+-- ЧАСТЬ 2: Заполнение таблиц тестовыми данными для проверки работы
+-- =========================================================================
+
+INSERT INTO laboratories (lab_number, Lab_name, activity_type, head_of_lab, workplaces_count, has_project_equipment, department_number) VALUES
+(101, 'Лаборатория ИИ', 'Исследования', 'Иванов И.И.', 25, TRUE, 1),
+(104, 'Лаборатория Сетей', 'Практика', 'Петров П.П.', 15, FALSE, 1),
+(106, 'Лаборатория Баз Данных', 'Лекции', 'Сидоров С.С.', 30, TRUE, 2),
+(108, 'Лаборатория Физики', 'Опыты', 'Кузнецов К.К.', 18, TRUE, 2),
+(201, 'Лаборатория Химии', 'Анализ', 'Попов П.А.', 22, FALSE, 1);
+
+INSERT INTO Schedule (group_number, lab_number, discipline, day_of_week, lesson_number) VALUES
+('ИВТ-11', 106, 'Базы данных', 'Понедельник', 2),
+('ИВТ-12', 106, 'Программирование', 'Вторник', 3),
+('ИВТ-13', 104, 'Сети и ТК', 'Среда', 5),
+('ИВТ-14', 106, 'Архитектура ЭВМ', 'Четверг', 5),
+('ИВТ-15', 201, 'Химия', 'Пятница', 1);
+
+
+-- =========================================================================
+-- ЧАСТЬ 3: Выполнение второй практической работы (Вариант 18)
+-- =========================================================================
+
+-- Вариант 18
+-- Задание 1: выбрать все лаборатории 1 этажа, в которых есть проектное оборудование и число мест больше 20.
+SELECT * 
+FROM laboratories 
+WHERE lab_number BETWEEN 100 AND 199 
+  AND has_project_equipment = TRUE 
+  AND workplaces_count > 20;
+
+-- Задание 2: Выбрать дни недели и номера пар, на которых 106 лаборатория занята.
+SELECT day_of_week, lesson_number 
+FROM Schedule 
+WHERE lab_number = 106;
+
+-- Задание 3: Создать таблицу, содержащую данные 2 запроса с указанием данных из таблицы "Расписание"
+CREATE TABLE Step3_Schedule AS 
+SELECT group_number, lab_number, discipline, day_of_week, lesson_number 
+FROM Schedule 
+WHERE lab_number = 106;
+
+-- Задание 4: добавить в созданную таблицу расписание для всех лабораторий 1 этажа.
+INSERT INTO Step3_Schedule (group_number, lab_number, discipline, day_of_week, lesson_number)
+SELECT group_number, lab_number, discipline, day_of_week, lesson_number 
+FROM Schedule 
+WHERE lab_number BETWEEN 100 AND 199;
+
+-- Просмотр содержимого созданной таблицы перед изменениями
+SELECT * FROM Step3_Schedule;
+
+-- Задание 5: В Созданной таблице для всех занятий, проводимых на 5 паре, поменять местами 104 и 106 лаборатории.
+UPDATE Step3_Schedule 
+SET lab_number = CASE 
+    WHEN lab_number = 104 THEN 106 
+    WHEN lab_number = 106 THEN 104 
+END
+WHERE lesson_number = 5 AND lab_number IN (104, 106);
+
+-- Задание 6: Из созданной таблицы удалить все записи для занятий, проводимых во вторник.
+DELETE FROM Step3_Schedule 
+WHERE LOWER(day_of_week) IN ('вторник', 'tuesday');
+
+-- Просмотр итогового вида созданной таблицы после обновлений и удалений
+SELECT * FROM Step3_Schedule;
+
+-- Задание 7: Посчитать количество лабораторий на каждой кафедре, оснащенных проектным оборудованием и без него.
+SELECT department_number, has_project_equipment, COUNT(*) AS labs_count 
+FROM laboratories 
+GROUP BY department_number, has_project_equipment
+ORDER BY department_number, has_project_equipment;
